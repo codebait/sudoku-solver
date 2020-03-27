@@ -7,12 +7,15 @@ class SudokuSolver {
 
 
   public static final String ANSI_RESET = "\u001B[0m";
-  private final int[][] board;
-  private final int[][] boardCopy;
+  public static final String ANSI_RED = "\u001B[31m";
+  public static final String ANSI_GREEN = "\u001B[32m";
+  public static final int EMPTY_FIELD = 0;
+  private final int[][] originBoard;
+  private final int[][] workingCopy;
 
   public SudokuSolver(int[][] board) {
-    this.board = copy(board);
-    this.boardCopy = copy(board);
+    this.originBoard = copy(board);
+    this.workingCopy = copy(board);
   }
 
   private int[][] copy(int[][] board) {
@@ -20,51 +23,47 @@ class SudokuSolver {
   }
 
   public int[][] solve() {
-    printOriginBoard();
-    solveRec();
-    printSolvedBoard();
-    return copy(boardCopy);
+    if (!solveBoard()) {
+      throw new IllegalArgumentException("not possible to solve");
+    }
+    return copy(workingCopy);
   }
 
-  private boolean solveRec() {
+  private boolean solveBoard() {
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
-        if (boardCopy[i][j] == 0) {
-          for (int k = 1; k < 10; k++) {
-            if (checkPossible(i, j, k)) {
-              boardCopy[i][j] = k;
-              if (solveRec()) {
-                return true;
-              }
-              boardCopy[i][j] = 0;
-
-            }
-          }
-          return false;
+        if (notFilled(i, j)) {
+          return solveForField(i, j);
         }
       }
     }
     return true;
   }
 
-  private boolean checkPossible(int x, int y, int value) {
-    if (boardCopy[x][y] != 0) {
-      return false;
-    }
-    for (int i = 0; i < 9; i++) {
-      if (boardCopy[i][y] == value) {
-        return false;
-      }
-      if (boardCopy[x][i] == value) {
-        return false;
+  private boolean solveForField(int i, int j) {
+    for (int k = 1; k < 10; k++) {
+      if (isPossibleToFill(i, j, k)) {
+        workingCopy[i][j] = k;
+        if (solveBoard()) {
+          return true;
+        }
+        workingCopy[i][j] = EMPTY_FIELD;
       }
     }
+    return false;
+  }
 
+  private boolean isPossibleToFill(int x, int y, int value) {
+
+    return notExistInLines(x, y, value) && notExistInBox(x, y, value);
+  }
+
+  private boolean notExistInBox(int x, int y, int value) {
     int startX = x - x % 3;
     int startY = y - y % 3;
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
-        if (boardCopy[startX + i][startY + j] == value) {
+        if (workingCopy[startX + i][startY + j] == value) {
           return false;
         }
       }
@@ -72,35 +71,18 @@ class SudokuSolver {
     return true;
   }
 
-  private void printOriginBoard() {
-    System.out.println("--------- ORIGIN -----------");
-    for (int[] ints : board) {
-      for (int anInt : ints) {
-        printNumber(anInt);
+  private boolean notExistInLines(int x, int y, int value) {
+    for (int i = 0; i < 9; i++) {
+      if (workingCopy[i][y] == value || workingCopy[x][i] == value) {
+        return false;
       }
-      System.out.println();
     }
+    return true;
   }
 
-  private void printSolvedBoard() {
-    System.out.println("--------- SOLVED -----------");
-    for (int[] ints : boardCopy) {
-      for (int anInt : ints) {
-        printNumber(anInt);
-      }
-      System.out.println();
-    }
+  private boolean notFilled(int x, int y) {
+    return workingCopy[x][y] == EMPTY_FIELD;
   }
 
-  private void printNumber(int anInt) {
-    if (anInt == 0) {
-      printInColor("*  ", Color.RED);
-    } else {
-      printInColor(anInt + "  ", Color.GREEN);
-    }
-  }
 
-  private void printInColor(String text, Color color) {
-    System.out.print(color.getAnsiColor() + text + ANSI_RESET);
-  }
 }

@@ -17,7 +17,9 @@ class SudokuApp {
           .map(s -> Stream.of(s).mapToInt(Integer::parseInt).toArray())
           .toArray(int[][]::new);
       SudokuSolver sudokuSolver = new SudokuSolver(ints);
-      sudokuSolver.solve();
+      int[][] solve = sudokuSolver.solve();
+      SudokuPrinter sudokuPrinter = new SudokuPrinter();
+      sudokuPrinter.print(solve);
     }
 
   }

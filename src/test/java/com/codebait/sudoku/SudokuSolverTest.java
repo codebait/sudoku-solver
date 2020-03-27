@@ -1,99 +1,48 @@
 package com.codebait.sudoku;
 
-import static org.openqa.selenium.By.cssSelector;
-import static org.openqa.selenium.By.linkText;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.Arrays;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+
 
 class SudokuSolverTest {
 
-  private ChromeDriver chromeDriver;
-  private String url;
-
-  @BeforeEach
-  void setUp() {
-    chromeDriver = new ChromeDriver();
-    url = "https://sudoku.com/";
-  }
-
   @Test
-  void shouldName() throws InterruptedException {
-    chromeDriver.get(url);
-    WebDriverWait wait = new WebDriverWait(chromeDriver, 5);
-    wait.until(a -> a.findElement(cssSelector(".difficulty-label-text"))).click();
-    wait.until(a -> a.findElement(linkText("Expert"))).click();
-    wait.until(a -> a.findElement(
-        cssSelector(".game-row:nth-child(1) > .game-cell:nth-child(1) .pencil-grid-cell-3")
-    )).click();
-
-    String clearGrid = getGrid();
-
-    SudokuSolver sudokuSolver = new SudokuSolver(getBoard(clearGrid));
-    int[][] solve = sudokuSolver.solve();
-
-    insertOnPage(solve);
-
+  void shouldReturnSolvedBoard() {
+    // given
+    int[][] inputBoard =
+        {
+            {0, 1, 0, 0, 6, 0, 0, 7, 2},
+            {0, 5, 0, 0, 9, 0, 0, 0, 8},
+            {0, 0, 0, 0, 0, 0, 0, 0, 1},
+            {0, 0, 8, 0, 1, 9, 0, 0, 0},
+            {0, 0, 2, 0, 0, 4, 5, 0, 0},
+            {4, 0, 0, 6, 8, 5, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 7},
+            {8, 0, 0, 4, 0, 0, 0, 6, 0},
+            {0, 0, 6, 0, 0, 0, 0, 0, 0}
+        };
+    SudokuSolver out = new SudokuSolver(inputBoard);
+    // when
+    int[][] solved = out.solve();
+    // then
+    int[][] outputBoard =
+        {
+            {9, 1, 3, 5, 6, 8, 4, 7, 2},
+            {2, 5, 4, 1, 9, 7, 6, 3, 8},
+            {6, 8, 7, 3, 4, 2, 9, 5, 1},
+            {5, 3, 8, 2, 1, 9, 7, 4, 6},
+            {1, 6, 2, 7, 3, 4, 5, 8, 9},
+            {4, 7, 9, 6, 8, 5, 1, 2, 3},
+            {3, 4, 5, 9, 2, 6, 8, 1, 7},
+            {8, 9, 1, 4, 7, 3, 2, 6, 5},
+            {7, 2, 6, 8, 5, 1, 3, 9, 4}
+        };
+    int[] expected = Arrays.stream(outputBoard).flatMapToInt(Arrays::stream).toArray();
+    int[] actual = Arrays.stream(solved).flatMapToInt(Arrays::stream).toArray();
+    Assertions.assertArrayEquals(expected, actual);
 
   }
 
-  private void insertOnPage(int[][] board) {
-    Actions make = new Actions(chromeDriver);
-    for (int[] ints : board) {
-      for (int anInt : ints) {
-        make.sendKeys(String.valueOf(anInt), Keys.RIGHT);
-      }
-      for (int i = 0; i < 9; i++) {
-        make.sendKeys(Keys.LEFT);
-      }
-      make.sendKeys(Keys.DOWN);
-    }
-    make.perform();
-  }
 
-
-  private String getGrid() {
-    WebDriverWait wait = new WebDriverWait(chromeDriver, 5);
-    Actions make = new Actions(chromeDriver);
-    var stream = IntStream.range(0, 10).mapToObj(o -> Keys.chord("0"))
-        .flatMap(s -> Stream.<CharSequence>of(s, Keys.RIGHT));
-
-    make.sendKeys(stream.toArray(CharSequence[]::new)).perform();
-    wait.until(a -> a.findElement(
-        cssSelector(".game-row:nth-child(1) > .game-cell:nth-child(1) .pencil-grid-cell-3")
-    )).click();
-    return chromeDriver.getLocalStorage().getItem("clearGrid");
-  }
-
-
-  private int[][] getBoard(String clearGrid) {
-    int[][] board = new int[9][9];
-    Pattern compile = Pattern.compile("(\\d,?){9}");
-    Matcher matcher = compile.matcher(clearGrid);
-    for (int i = 0; matcher.find(); i++) {
-      Pattern digit = Pattern.compile("(\\d),?");
-      Matcher matcher1 = digit.matcher(matcher.group(0));
-      for (int j = 0; matcher1.find(); j++) {
-        int num = Integer.parseInt(matcher1.group(1));
-        board[i][j] = num;
-      }
-
-    }
-    return board;
-  }
-
-  @AfterEach
-  void tearDown() throws InterruptedException {
-    Thread.sleep(5000);
-    chromeDriver.close();
-  }
 }
